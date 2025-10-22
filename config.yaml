@@ -1,0 +1,86 @@
+# ReliableEval Configuration File
+# This file contains default parameters for the ReliableEval pipeline
+
+# Data and Path Configuration
+data:
+  dove_path: "/path/to/dove"  # Path to DOVE repository - UPDATE THIS
+  output_dir: "data"
+  results_dir: "results"
+  figures_dir: "figures"
+
+# Resampling Configuration
+resampling:
+  num_resamplings: 100
+  max_workers: 1
+
+# Model Configuration
+models:
+  # OpenAI Models
+  openai:
+    platform: "openai"
+    models:
+      - name: "gpt-4o"
+        temperature: 0.1
+        max_tokens: 30
+      - name: "gpt-4o-greedy"
+        temperature: 0.0
+        max_tokens: 30
+  
+  # Anthropic Models
+  anthropic:
+    platform: "anthropic"
+    models:
+      - name: "claude-3-5-sonnet-20241022"
+        temperature: 0.1
+        max_tokens: 30
+  
+  # X.AI Models
+  xai:
+    platform: "xai"
+    models:
+      - name: "grok-3"
+        temperature: 0.1
+        max_tokens: 30
+  
+  # Together AI Models
+  together:
+    platform: "together"
+    models:
+      - name: "meta-llama/Llama-3.3-70B-Instruct-Turbo"
+        temperature: 0.1
+        max_tokens: 30
+      - name: "meta-llama/Llama-3-8B-Instruct"
+        temperature: 0.1
+        max_tokens: 30
+
+# Inference Configuration
+inference:
+  batch_size: 50
+  max_retries: 3
+  timeout: 30
+
+# Evaluation Configuration
+evaluation:
+  epsilon: 0.01
+  delta: 0.1
+  max_k: 2
+  samples_per_k: 5000
+
+# Plot Configuration
+plotting:
+  figure_size: [12, 8]
+  dpi: 300
+  font_size: 18
+  color_scheme: "tab10"
+
+# Dataset Configuration
+datasets:
+  gpqa:
+    name: "GPQA"
+    card: "cards.gpqa.Diamond"
+    demos_pool_size: 10
+    num_demos: 5
+    demos_taken_from: "test"
+    format: "formats.chat_api"
+    demos_removed_from_data: true
+    system_prompt: "system_prompts.empty"

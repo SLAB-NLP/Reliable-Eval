@@ -1,8 +1,25 @@
+#!/usr/bin/env python3
+"""
+Base Methods for ReliableEval Inference Scripts.
+
+This module contains shared utility functions used across all inference scripts
+in the ReliableEval pipeline. It provides common functionality for data loading,
+progress tracking, batch processing, and result saving.
+"""
+
 import json
 import os
 from tqdm import tqdm
 
+
 def update_pbar(current_sampling, pbar):
+    """
+    Update progress bar with completed samples.
+    
+    Args:
+        current_sampling (dict or list): Current sampling data
+        pbar (tqdm): Progress bar object
+    """
     if "source" in current_sampling:
         pbar.update(len(current_sampling["source"]))
     else:
@@ -11,6 +28,20 @@ def update_pbar(current_sampling, pbar):
 
 
 def load_existing_data(path_to_data, out_path):
+    """
+    Load input data and existing output data for resuming inference.
+    
+    Args:
+        path_to_data (str): Path to input data JSON file
+        out_path (str): Path to output predictions JSON file
+        
+    Returns:
+        tuple: (data, output_data) - Input data and existing output data
+        
+    Note:
+        If the output file doesn't exist, returns empty dict for output_data.
+        This allows resuming from partial results.
+    """
     # Load the data
     with open(path_to_data, 'r') as f:
         data = json.load(f)
@@ -23,6 +54,15 @@ def load_existing_data(path_to_data, out_path):
 
 
 def define_pbar(data):
+    """
+    Define progress bar for tracking inference progress.
+    
+    Args:
+        data (dict): Input data containing all resampling variations
+        
+    Returns:
+        tqdm: Progress bar object
+    """
     total_tasks_num = 0
     for sampling in data:
         current_sampling = data[sampling]
@@ -31,7 +71,20 @@ def define_pbar(data):
     pbar = tqdm(total=total_tasks_num)
     return pbar
 
+
 def prepare_batches(batch_size, current_sampling, output_data, sampling):
+    """
+    Prepare batches of remaining tasks for processing.
+    
+    Args:
+        batch_size (int): Size of each batch
+        current_sampling (dict): Current resampling data
+        output_data (dict): Existing output data
+        sampling (str): Current sampling key
+        
+    Returns:
+        list: List of batches containing remaining tasks
+    """
     tasks_completed = len(output_data[sampling])
     tasks_remaining = current_sampling["source"][tasks_completed:]
     batches = []
@@ -42,6 +95,16 @@ def prepare_batches(batch_size, current_sampling, output_data, sampling):
 
 
 def dump_batch(batch, completed, out_path, output_data, sampling):
+    """
+    Save batch results to output file.
+    
+    Args:
+        batch (list): Batch of input samples
+        completed (list): Completed predictions for the batch
+        out_path (str): Output file path
+        output_data (dict): Output data dictionary
+        sampling (str): Current sampling key
+    """
     batch_predictions = [None] * len(batch)
     for i, answer in enumerate(completed):
         batch_predictions[i] = answer

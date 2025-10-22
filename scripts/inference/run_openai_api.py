@@ -1,3 +1,14 @@
+#!/usr/bin/env python3
+"""
+OpenAI API Inference Script for ReliableEval.
+
+This script runs inference using OpenAI-compatible APIs (OpenAI, Together AI, X.AI)
+on resampled prompt data. It supports multiple platforms and can handle batch processing
+for efficient inference on large datasets.
+
+Models used in the paper: gpt-4o, gpt-4o-greedy, grok-3
+"""
+
 import os
 from argparse import ArgumentParser
 import json
@@ -9,24 +20,39 @@ from scripts.inference.run_base_methods import load_existing_data, define_pbar, 
 
 def infer(path_to_data, model_name, out_path, temperature, platform, max_tokens, batch_size):
     """
-    Infer the data from the given path.
-
+    Run inference on resampled prompt data using OpenAI-compatible APIs.
+    
+    This function processes multiple prompt variations and generates model responses
+    using the specified API platform. It supports resuming from partial results
+    and batch processing for efficiency.
+    
     Args:
-        path_to_data (str): Path to the data file.
-        model_name (str): Name of the model to use for inference.
-        out_path (str): Path to save the output data.
-        temperature (float): Temperature for the model.
-        platform (str): Platform to use for inference (e.g., "together", "openai").
-        max_tokens (int): Maximum number of tokens to use for inference.
-        batch_size (int): Batch size for processing.
+        path_to_data (str): Path to the resampled data JSON file
+        model_name (str): Name of the model to use for inference
+        out_path (str): Path to save the output predictions
+        temperature (float): Temperature for generation (0.0-1.0)
+        platform (str): Platform to use ("openai", "together", or "xai")
+        max_tokens (int): Maximum tokens for model responses
+        batch_size (int): Batch size for processing requests
+        
+    Raises:
+        ValueError: If platform is not supported
+        FileNotFoundError: If input data file doesn't exist
+        
+    Note:
+        - Supports resuming from partial results
+        - Uses progress bars for long-running operations
+        - Automatically handles API rate limits and errors
+        - Output format: JSON file with model predictions for each resampling
     """
-    # Placeholder for actual inference logic
     print(f"Inferring data from {path_to_data}")
+    print(f"Using model: {model_name} on platform: {platform}")
+    print(f"Temperature: {temperature}, Max tokens: {max_tokens}")
 
-    print("temperature", temperature)
-
+    # Load existing data and check for partial results
     data, output_data = load_existing_data(path_to_data, out_path)
 
+    # Initialize API client based on platform
     if platform == "together":
         client = Together()
     elif platform == "openai":
@@ -39,10 +65,14 @@ def infer(path_to_data, model_name, out_path, temperature, platform, max_tokens,
     else:
         raise ValueError("Invalid platform. Choose either 'together' or 'openai' or 'xai'.")
 
+    # Initialize progress bar
     pbar = define_pbar(data)
 
+    # Process each resampling variation
     for sampling in data:
         current_sampling = data[sampling]
+        
+        # Check if this resampling is already completed
         if sampling in output_data:
             update_pbar(output_data[sampling], pbar)
             if len(output_data[sampling]) == len(current_sampling["source"]):
@@ -52,8 +82,10 @@ def infer(path_to_data, model_name, out_path, temperature, platform, max_tokens,
         if sampling not in output_data:
             output_data[sampling] = []
 
+        # Prepare batches for processing
         batches = prepare_batches(batch_size, current_sampling, output_data, sampling)
 
+        # Process each batch
         for batch in batches:
             completed = []
             for i in range(len(batch)):
@@ -69,25 +101,55 @@ def infer(path_to_data, model_name, out_path, temperature, platform, max_tokens,
                 answer = completion.choices[0].message.content
                 completed.append(answer)
 
+            # Save batch results
             dump_batch(batch, completed, out_path, output_data, sampling)
-        print("Done predicting ", sampling)
-    print(f"Done.")
+        print(f"Completed resampling: {sampling}")
+    print("Inference completed successfully!")
 
 
 
 if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument("--data", required=True)
-    parser.add_argument("--out", required=True)
-    parser.add_argument("--model", required=True)
-    parser.add_argument("--temp", default=0.0, type=float)
-    parser.add_argument("--platform", choices=["together", "openai", "xai"], default="together")
-    parser.add_argument("--max_tokens", default=20, type=int)
-    parser.add_argument("--batch_size", default=50, type=int, help="Batch size for processing")
+    """
+    Command-line interface for OpenAI API inference.
+    
+    Example usage:
+        python run_openai_api.py \
+            --data data/gpqa/100_resamplings.json \
+            --out data/gpqa/predictions/GPT-4o_predictions.json \
+            --model gpt-4o \
+            --platform openai \
+            --temp 0.1 \
+            --batch_size 100 \
+            --max_tokens 30
+    """
+    parser = ArgumentParser(description="Run inference using OpenAI-compatible APIs")
+    parser.add_argument("--data", required=True, 
+                       help="Path to resampled data JSON file")
+    parser.add_argument("--out", required=True, 
+                       help="Output file path for predictions")
+    parser.add_argument("--model", required=True, 
+                       help="Model name (e.g., gpt-4o, meta-llama/Llama-3.3-70B-Instruct-Turbo)")
+    parser.add_argument("--temp", default=0.0, type=float, 
+                       help="Temperature for generation (default: 0.0)")
+    parser.add_argument("--platform", choices=["together", "openai", "xai"], default="together",
+                       help="API platform to use (default: together)")
+    parser.add_argument("--max_tokens", default=20, type=int, 
+                       help="Maximum tokens for responses (default: 20)")
+    parser.add_argument("--batch_size", default=50, type=int, 
+                       help="Batch size for processing (default: 50)")
+    
     args = parser.parse_args()
+    
+    print("="*60)
+    print("ReliableEval OpenAI API Inference")
+    print("="*60)
+    print(f"Model: {args.model}")
+    print(f"Platform: {args.platform}")
+    print(f"Temperature: {args.temp}")
+    print(f"Max tokens: {args.max_tokens}")
+    print(f"Batch size: {args.batch_size}")
+    print(f"Data: {args.data}")
+    print(f"Output: {args.out}")
+    print("="*60)
+    
     infer(args.data, args.model, args.out, args.temp, args.platform, args.max_tokens, args.batch_size)
-
-    print(
-        f"Running inference with model {args.model} on platform {args.platform}.",
-        f"Temperature: {args.temp}, Max tokens: {args.max_tokens}",
-        f"Data path: {args.data}, Output path: {args.out}", sep='\n')
