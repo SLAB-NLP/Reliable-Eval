@@ -3,7 +3,7 @@
 [![Paper](https://img.shields.io/badge/Paper-arXiv-red)](https://arxiv.org/abs/2505.22169)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-This repository contains the implementation for the paper **"ReliableEval: A Recipe for Stochastic LLM Evaluation via Method of Moments"** by Gili Lior, Eliya Habba, Shahar Levy, Avi Caciularu, and Gabriel Stanovsky.
+This repository contains the implementation for the paper **"ReliableEval: A Recipe for Stochastic LLM Evaluation via Method of Moments"** by Gili Lior, Eliya Habba, Shahar Levy, Avi Caciularu, and Gabriel Stanovsky, accepted to Findings of EMNLP 2025.
 
 ## Abstract
 
